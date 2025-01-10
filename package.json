@@ -1,0 +1,46 @@
+{
+  "name": "cry0",
+  "version": "0.0.1-beta",
+  "description": "A lightweight CLI for generating cold wallets, managing keys, and signing cryptocurrency transactions offline across multiple blockchains.",
+  "main": "dist/index.js",
+  "bin": {
+    "cry0": "bin/run.js"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drincann/cry0.git"
+  },
+  "keywords": [
+    "cli",
+    "wallet",
+    "btc",
+    "eth"
+  ],
+  "author": "drincann",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Drincann/cry0/issues"
+  },
+  "homepage": "https://github.com/Drincann/cry0#readme",
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/prompts": "^2.4.9",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@ethereumjs/util": "^9.1.0",
+    "@ethereumjs/wallet": "^2.0.4",
+    "bip32": "^5.0.0-rc.0",
+    "bip39": "^3.1.0",
+    "bitcoinjs-lib": "^6.1.7",
+    "commander": "^12.1.0",
+    "ethers": "^6.13.4",
+    "prompts": "^2.4.2",
+    "tiny-secp256k1": "^2.2.3"
+  }
+}
