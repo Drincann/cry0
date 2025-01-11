@@ -2,6 +2,8 @@ import { Command } from 'commander';
 import { Wallet } from '../../../libs/core/wallet.mjs';
 import { repositories as repos } from '../../../libs/persistence/repository.mjs';
 import { logger } from '../../logger/index.mjs';
+import prompts from 'prompts'
+import { WalletData, WalletDataWithoutPassphrase } from '../../../libs/core/types.mjs';
 
 export const walletShowCommand = new Command()
   .name('show')
@@ -19,6 +21,23 @@ export const walletShowCommand = new Command()
       return;
     }
 
+    if (walletData.mnemonic.hasPassphrase) {
+      const result = await prompts({
+        type: 'password',
+        name: 'value',
+        message: 'Enter passphrase for the mnemonic'
+      })
+      if (typeof result.value !== 'string' || result.value.length === 0) {
+        logger.error('Passphrase is required');
+        return;
+      }
+
+      const wallet = Wallet.from(assignPassphrase(walletData, result.value));
+      show(wallet, opts);
+      return;
+    }
+
+    // No passphrase required
     const wallet = Wallet.from(walletData);
     show(wallet, opts);
   })
@@ -37,3 +56,14 @@ function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean, mnem
     });
   });
 }
+
+function assignPassphrase(walletData: WalletDataWithoutPassphrase, value: string): WalletData {
+  return {
+    ...walletData,
+    mnemonic: {
+      ...walletData.mnemonic,
+      passphrase: value
+    }
+  }
+}
+

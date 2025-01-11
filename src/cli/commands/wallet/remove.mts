@@ -3,7 +3,7 @@ import { Wallet } from '../../../libs/core/wallet.mjs';
 import prompts from 'prompts'
 import { repositories as repos } from '../../../libs/persistence/repository.mjs';
 import { logger } from '../../logger/index.mjs';
-import { thumb } from '../../util/cli.mjs';
+import { accountSummary } from '../../util/cli.mjs';
 
 export const walletRemoveCommand = new Command()
   .name('remove')
@@ -24,7 +24,7 @@ export const walletRemoveCommand = new Command()
       const answer = await prompts({
         type: 'confirm',
         name: 'value',
-        message: `Are you sure you want to remove wallet '${walletAlias}' [${thumb(wallet.accounts)}]?`
+        message: `Are you sure you want to remove wallet '${walletAlias}' [${accountSummary(wallet.accounts)}]?`
       });
       if (!answer) return;
       repos.wallet.remove(walletAlias);

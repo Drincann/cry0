@@ -10,11 +10,22 @@ export interface Mnemonic {
   passphrase?: string
 }
 
-export interface Collections {
-  wallets: WalletData[]
+export interface MnemonicWithoutPassphrase {
+  words: string
+  hasPassphrase: boolean
 }
 
-// TODO: just make it work first
+export interface Collections {
+  wallets: WalletDataWithoutPassphrase[]
+}
+
+// 脱敏的
+export interface WalletDataWithoutPassphrase {
+  alias: string
+  mnemonic: MnemonicWithoutPassphrase
+  accounts: AccountData[]
+}
+
 export interface WalletData {
   alias: string
   mnemonic: Mnemonic

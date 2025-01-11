@@ -1,4 +1,4 @@
-import type { WalletData } from "./types.mjs";
+import type { WalletData, WalletDataWithoutPassphrase } from "./types.mjs";
 import { identity, toMap } from "../utils/functional.mjs";
 import { Account } from "./account.mjs";
 import { Mnemonic } from "./types.mjs";
@@ -26,11 +26,19 @@ export class Wallet {
     )
   }
 
-  public serialize(): WalletData {
+  public serialize(): WalletDataWithoutPassphrase {
     return {
       alias: this.alias,
-      mnemonic: this.mnemonic,
+      mnemonic: {
+        hasPassphrase: isNonEmptyString(this.mnemonic.passphrase),
+        words: this.mnemonic.words,
+      },
       accounts: [...this.accounts.values()].map(account => account.serialize())
     }
   }
 }
+
+function isNonEmptyString(passphrase: string | undefined): boolean {
+  return typeof passphrase === 'string' && passphrase.length > 0;
+}
+
