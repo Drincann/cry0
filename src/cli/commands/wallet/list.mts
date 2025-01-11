@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import { Wallet } from '../../lib/core/wallet.mjs';
-import { repositories as repos } from '../../lib/persistence/repository.mjs';
-import { logger } from '../logger/index.mjs';
-import { thumb } from '../util/cli.mjs';
+import { Wallet } from '../../../libs/core/wallet.mjs';
+import { repositories as repos } from '../../../libs/persistence/repository.mjs';
+import { logger } from '../../logger/index.mjs';
+import { thumb } from '../../util/cli.mjs';
 
 export const walletListCommand = new Command()
   .name('list')

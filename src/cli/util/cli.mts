@@ -1,5 +1,5 @@
-import { Account } from "../../lib/core/account.mjs";
-import { Address } from "../../lib/core/address.mjs";
+import { Account } from "../../libs/core/account.mjs";
+import { Address } from "../../libs/core/address.mjs";
 
 export function thumb(accounts: Map<string, Account>) {
   return [...accounts.entries()].map(([alias, account]) => `${alias} ${thumbAddresses(account.addresses)}`).join(', ');

@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import { walletCreateCommand } from './create.mjs';
-import { walletRenameCommand } from './rename.mjs';
-import { walletShowCommand } from './show.mjs';
-import { walletListCommand } from './list.mjs';
-import { walletRemoveCommand } from './remove.mjs';
+import { walletCreateCommand } from './wallet/create.mjs';
+import { walletRenameCommand } from './wallet/rename.mjs';
+import { walletShowCommand } from './wallet/show.mjs';
+import { walletListCommand } from './wallet/list.mjs';
+import { walletRemoveCommand } from './wallet/remove.mjs';
 
 export const walletCommand = new Command()
   .name('wallet')

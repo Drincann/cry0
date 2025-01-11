@@ -1,10 +1,10 @@
 import { Command } from 'commander';
-import { repositories as repos } from '../../lib/persistence/repository.mjs';
-import { CliParameterError } from '../error/index.mjs';
-import { logger } from '../logger/index.mjs';
-import * as mnemonicUtil from '../../lib/core/mnemonic.mjs'
+import { repositories as repos } from '../../../libs/persistence/repository.mjs';
+import { CliParameterError } from '../../error/index.mjs';
+import { logger } from '../../logger/index.mjs';
+import * as mnemonicUtil from '../../../libs/core/mnemonic.mjs'
 import assert from 'assert';
-import { Wallet } from '../../lib/core/wallet.mjs';
+import { Wallet } from '../../../libs/core/wallet.mjs';
 
 interface WalletCreateParams {
   alias?: string

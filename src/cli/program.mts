@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { walletCommand } from './wallet/index.mjs';
+import { walletCommand } from './commands/index.mjs';
 
 export const program = new Command()
   .name('cry0')

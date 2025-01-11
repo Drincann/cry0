@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import { repositories as repos } from '../../lib/persistence/repository.mjs';
-import { logger } from '../logger/index.mjs';
+import { repositories as repos } from '../../../libs/persistence/repository.mjs';
+import { logger } from '../../logger/index.mjs';
 
 export const walletRenameCommand = new Command()
   .name('rename')
