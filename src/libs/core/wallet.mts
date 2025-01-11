@@ -4,7 +4,7 @@ import { Account } from "./account.mjs";
 import { Mnemonic } from "./types.mjs";
 
 export class Wallet {
-  private mnemonic: Mnemonic
+  public mnemonic: Mnemonic
   public alias: string;
   public accounts: Map<string, Account> // alias -> Account
 

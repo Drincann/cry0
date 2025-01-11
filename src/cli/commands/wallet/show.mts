@@ -10,6 +10,7 @@ export const walletShowCommand = new Command()
   .command('show <wallet-alias>')
   .option<Set<string>>('-c --chain <chain>', 'Show only addresses for a specific chain', (chain) => new Set(chain.split(',').map(c => c.toUpperCase())), new Set())
   .option('-p --private', 'Show private keys')
+  .option('-m --mnemonic', 'Show mnemonic')
 
   .action(async (walletAlias, opts, cmd) => {
     const walletData = await repos.wallet.getWallet(walletAlias);
@@ -22,11 +23,12 @@ export const walletShowCommand = new Command()
     show(wallet, opts);
   })
 
-function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean }) {
+function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean, mnemonic: boolean }) {
   logger.info(`[Alias]: ${wallet.alias}`);
+  if (opts.mnemonic) logger.info(`[Mnemonic]: ${wallet.mnemonic.words}`);
   logger.info('[Accounts]:');
   [...wallet.accounts.entries()].forEach(([alias, account], i) => {
-    logger.info(`  ${i}.${alias}:`);
+    logger.info(`  ${i}.${alias}:`)
     Object.entries(account.addresses).forEach(([network, address]) => {
       if (opts.chain.has(network) || opts.chain.size === 0) {
         logger.info(`    ${network}: <address> ${address.address}`)
