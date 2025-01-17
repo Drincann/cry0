@@ -5,6 +5,7 @@ import { logger } from '../../logger/index.mjs';
 import * as mnemonicUtil from '../../../libs/core/mnemonic.mjs'
 import assert from 'assert';
 import { Wallet } from '../../../libs/core/wallet.mjs';
+import { show } from './show.mjs';
 
 interface WalletCreateParams {
   alias?: string
@@ -12,6 +13,7 @@ interface WalletCreateParams {
   mnemonicLength: number
   passphrase?: string
   showMnemonic?: boolean
+  ephemeral?: boolean
 }
 
 export const walletCreateCommand = new Command()
@@ -23,13 +25,14 @@ export const walletCreateCommand = new Command()
   .option<number>('-l --mnemonic-length <length> ', 'Length of the mnemonic you want to generate', length => parseInt(length), 12)
   .option('-p --passphrase <passphrase>', 'Passphrase for the mnemonic')
   .option('-s --show-mnemonic', 'Show the mnemonic after creating the wallet', false)
+  .option('-e --ephemeral', 'Do not save the wallet, only display in console', false)
 
   .action(async (opts: WalletCreateParams) => {
     try {
       fix(opts)
       check(opts); assert(isValidMnemonicLength(opts.mnemonicLength))
 
-      const walletName = opts.alias ?? await generateNextWalletName()
+      const walletName = opts.ephemeral ? 'ephemeral' : opts.alias ?? await generateNextWalletName()
       const mnemonic = {
         words: opts.mnemonic ?? mnemonicUtil.generate(opts.mnemonicLength),
         passphrase: opts.passphrase
@@ -42,8 +45,13 @@ export const walletCreateCommand = new Command()
         logger.info('Generated mnemonic: ' + mnemonic.words)
       }
 
-      logger.info(`Wallet '${wallet.alias}' created!`)
+      if (opts.ephemeral) {
+        logger.info(`Ephemeral wallet created! (not saved)`)
+        show(wallet, { chain: new Set(), private: true, mnemonic: true })
+        return;
+      }
 
+      logger.info(`Wallet '${wallet.alias}' created!`)
       repos.wallet.save(wallet.serialize())
     } catch (e: unknown) {
       if (e instanceof CliParameterError) {

@@ -42,7 +42,7 @@ export const walletShowCommand = new Command()
     show(wallet, opts);
   })
 
-function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean, mnemonic: boolean }) {
+export function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean, mnemonic: boolean }) {
   logger.info(`[Alias]: ${wallet.alias}`);
   if (opts.mnemonic) logger.info(`[Mnemonic]: ${wallet.mnemonic.words}`);
   logger.info('[Accounts]:');
