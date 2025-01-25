@@ -1,20 +1,29 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { logger } from '../../cli/logger/index.mjs'
+import { Aes256GcmEncrypted, aesDecrypt, aesEncrypt } from '../utils/crypto.mjs'
+import { CliParameterError } from '../../cli/error/index.mjs'
 
-interface Storage<Keys extends string, DataTypes extends { [key in Keys]: any }> {
+export interface Storage<
+  DataTypes extends { [key in Keys]: any },
+  Keys extends string = Exclude<keyof DataTypes, symbol | number>
+> {
   save<K extends Keys>(key: K, data: DataTypes[K]): Promise<void>
   load<K extends Keys>(key: K): Promise<DataTypes[K]>
 }
 
-export class UserHomeJsonStorage<
+export class EncryptedUserHomeJsonStorage<
   DataTypes extends { [key in Keys]: any },
   Keys extends string = Exclude<keyof DataTypes, symbol | number>
-> {
+> implements Storage<DataTypes, Keys> {
   private cache?: DataTypes
+  private passphrase: string
 
-  constructor() { }
-  private async loadAllData(): Promise<DataTypes> {
+  constructor(passphrase: string) {
+    this.passphrase = passphrase
+  }
+
+  private async loadAllAndDecrypt(): Promise<DataTypes> {
     const storageRoot = getStorageRoot()
     await createIfNotExists(storageRoot)
     const data = {} as DataTypes
@@ -22,10 +31,18 @@ export class UserHomeJsonStorage<
     await this.walk(storageRoot, async file => {
       const key = path.basename(file, '.json')
       try {
-        const value = JSON.parse(await fs.readFile(file, 'utf-8'))
-        data[key as Keys] = value
+        let content = JSON.parse((await fs.readFile(file, 'utf-8')))
+        if (isCrypted(content)) {
+          if (!this.passphrase) {
+            throw new CliParameterError('Passphrase is required')
+          }
+
+          content = JSON.parse(await decrypt(content, this.passphrase))
+        }
+
+        data[key as Keys] = content
       } catch (err) {
-        logger.error(`storage.mts: class UserHomeJsonStorage: Error loading data for key ${key}`)
+        logger.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
         throw err
       }
     })
@@ -43,31 +60,97 @@ export class UserHomeJsonStorage<
       if (stat.isFile()) {
         await callback(filePath)
       } else {
-        logger.warn(`storage.mts: method walk: Skipping directory ${filePath}`)
+        logger.debug(`Storage: method walk: Skipping directory ${filePath}`)
       }
     }
   }
 
   public async save<K extends Keys>(key: K, data: DataTypes[K]): Promise<void> {
     if (!this.cache) {
-      this.cache = await this.loadAllData()
+      this.cache = await this.loadAllAndDecrypt()
     }
 
     this.cache[key] = data
     const storageRoot = getStorageRoot()
     await createIfNotExists(storageRoot)
     const file = path.join(storageRoot, `${key}.json`)
+    if (!this.passphrase) {
+      throw new CliParameterError('Passphrase is required')
+    }
+
+    fs.writeFile(file, JSON.stringify(await aesEncrypt(JSON.stringify(data), this.passphrase)))
+  }
+
+  public async load<K extends Keys>(key: K): Promise<DataTypes[K]> {
+    if (!this.cache) {
+      this.cache = await this.loadAllAndDecrypt()
+    }
+
+    return this.cache[key]
+  }
+}
+
+export class UserHomeJsonStorage<
+  DataTypes extends { [key in Keys]: any },
+  Keys extends string = Exclude<keyof DataTypes, symbol | number>
+> implements Storage<DataTypes, Keys> {
+  private cache?: DataTypes
+
+  constructor() { }
+
+  private async loadAllAndDecrypt(): Promise<DataTypes> {
+    const storageRoot = getStorageRoot()
+    await createIfNotExists(storageRoot)
+    const data = {} as DataTypes
+
+    await this.walk(storageRoot, async file => {
+      const key = path.basename(file, '.json')
+      try {
+        data[key as Keys] = JSON.parse((await fs.readFile(file, 'utf-8')))
+      } catch (err) {
+        logger.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
+        throw err
+      }
+    })
+
+    return data
+  }
+
+  private async walk(dir: string, callback: (file: string) => Promise<void>) {
+    const files = await fs.readdir(dir)
+
+    for (const file of files) {
+      const filePath = path.join(dir, file)
+      const stat = await fs.stat(filePath)
+
+      if (stat.isFile()) {
+        await callback(filePath)
+      } else {
+        logger.warn(`Storage: method walk: Skipping directory ${filePath}`)
+      }
+    }
+  }
+
+  public async save<K extends Keys>(key: K, data: DataTypes[K]): Promise<void> {
+    if (!this.cache) {
+      this.cache = await this.loadAllAndDecrypt()
+    }
+
+    this.cache[key] = data
+    const storageRoot = getStorageRoot()
+    await createIfNotExists(storageRoot)
+    const file = path.join(storageRoot, `${key}.json`)
+
     fs.writeFile(file, JSON.stringify(data))
   }
 
   public async load<K extends Keys>(key: K): Promise<DataTypes[K]> {
     if (!this.cache) {
-      this.cache = await this.loadAllData()
+      this.cache = await this.loadAllAndDecrypt()
     }
 
     return this.cache[key]
   }
-
 }
 
 const getStorageRoot = () => {
@@ -88,14 +171,30 @@ const createIfNotExists = async (dir: string) => {
 
 const getUserHome = () => {
   if (process.env.HOME) {
-    logger.debug('storage.mts: method getUserHome: Using HOME')
+    logger.debug('Storage: method getUserHome: Using HOME')
     return process.env.HOME
   }
 
   if (process.env.USERPROFILE) {
-    logger.debug('storage.mts: method getUserHome: Using USERPROFILE')
+    logger.debug('Storage: method getUserHome: Using USERPROFILE')
     return process.env.USERPROFILE
   }
 
   throw new Error('Could not find home directory from environment variables')
+}
+
+async function decrypt(content: Aes256GcmEncrypted, passphrase: string): Promise<string> {
+  try {
+    return await aesDecrypt(content, passphrase)
+  } catch (e) {
+    throw new CliParameterError('The passphrase is incorrect')
+  }
+}
+
+function isCrypted(content: unknown): content is Aes256GcmEncrypted {
+  if (content === undefined || content === null) {
+    return false
+  }
+  return typeof content === 'object'
+    && 'ciphertext' in content && 'salt' in content && 'iv' in content && 'tag' in content
 }

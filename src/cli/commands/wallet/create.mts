@@ -6,6 +6,7 @@ import * as mnemonicUtil from '../../../libs/core/mnemonic.mjs'
 import assert from 'assert';
 import { Wallet } from '../../../libs/core/wallet.mjs';
 import { show } from './show.mjs';
+import { ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
 
 interface WalletCreateParams {
   alias?: string
@@ -29,6 +30,7 @@ export const walletCreateCommand = new Command()
 
   .action(async (opts: WalletCreateParams) => {
     try {
+      await ensureCliLevelSecretInitialized()
       fix(opts)
       check(opts); assert(isValidMnemonicLength(opts.mnemonicLength))
 

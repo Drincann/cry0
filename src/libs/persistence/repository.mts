@@ -1,8 +1,13 @@
-import { UserHomeJsonStorage } from "./storage.mjs"
+import { EncryptedUserHomeJsonStorage, Storage, UserHomeJsonStorage } from "./storage.mjs"
 import type { Collections, StoredWalletData } from "../core/types.mjs"
 
 class WalletRepository {
-  private storage: UserHomeJsonStorage<Collections> = new UserHomeJsonStorage()
+  private storage: Storage<Collections> = new EncryptedUserHomeJsonStorage('');
+
+  public init(passphrase: string) {
+    this.storage = new EncryptedUserHomeJsonStorage(passphrase)
+  }
+
   public async getAllWallets(): Promise<StoredWalletData[]> {
     return await this.storage.load('wallets') ?? []
   }
@@ -29,6 +34,24 @@ class WalletRepository {
   }
 }
 
+class SecretHashRepository {
+  private storage = new UserHomeJsonStorage<{ secret: { hash: string } }>();
+
+  public async set(hash: string) {
+    await this.storage.save('secret', { hash })
+  }
+
+  public async get(): Promise<string | undefined> {
+    return (await this.storage.load('secret'))?.hash
+  }
+}
+
+const walletRepo = new WalletRepository()
+const secretRepo = new SecretHashRepository()
 export const repositories = {
-  wallet: new WalletRepository()
+  wallet: walletRepo,
+  secret: secretRepo,
+  init: async (passphrase: string) => {
+    walletRepo.init(passphrase)
+  }
 }

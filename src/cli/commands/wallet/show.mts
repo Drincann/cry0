@@ -5,6 +5,8 @@ import { logger } from '../../logger/index.mjs';
 import prompts from 'prompts'
 import { WalletData, StoredWalletData } from '../../../libs/core/types.mjs';
 import { hexSha256 } from '../../../libs/utils/crypto.mjs';
+import { ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
+import { CliError } from '../../error/index.mjs';
 
 export const walletShowCommand = new Command()
   .name('show')
@@ -16,36 +18,44 @@ export const walletShowCommand = new Command()
   .option('-m --mnemonic', 'Show mnemonic')
 
   .action(async (walletAlias, opts, cmd) => {
-    const walletData = await repos.wallet.getWallet(walletAlias);
-    if (walletData === undefined) {
-      logger.error(`Wallet with alias '${walletAlias}' not found`);
-      return;
-    }
+    try {
+      await ensureCliLevelSecretInitialized()
 
-    if (walletData.mnemonic.hasPassphrase) {
-      const result = await prompts({
-        type: 'password',
-        name: 'value',
-        message: 'Enter passphrase for the mnemonic'
-      })
-      if (typeof result.value !== 'string' || result.value.length === 0) {
-        logger.error('Passphrase is required');
+      const walletData = await repos.wallet.getWallet(walletAlias);
+      if (walletData === undefined) {
+        logger.error(`Wallet with alias '${walletAlias}' not found`);
         return;
       }
 
-      if (!await hashMatches(walletData.mnemonic.passphraseSha256, result.value)) {
-        logger.error('Passphrase is incorrect');
+      if (walletData.mnemonic.hasPassphrase) {
+        const result = await prompts({
+          type: 'password',
+          name: 'value',
+          message: 'Enter passphrase for the mnemonic'
+        })
+        if (typeof result.value !== 'string' || result.value.length === 0) {
+          logger.error('Passphrase is required');
+          return;
+        }
+
+        if (!await hashMatches(walletData.mnemonic.passphraseSha256, result.value)) {
+          logger.error('Passphrase is incorrect');
+          return;
+        }
+
+        const wallet = Wallet.from(assignPassphrase(walletData, result.value));
+        show(wallet, opts);
         return;
       }
 
-      const wallet = Wallet.from(assignPassphrase(walletData, result.value));
+      // No passphrase required
+      const wallet = Wallet.from(walletData);
       show(wallet, opts);
-      return;
+    } catch (e: unknown) {
+      if (e instanceof CliError) {
+        logger.error(e.message)
+      }
     }
-
-    // No passphrase required
-    const wallet = Wallet.from(walletData);
-    show(wallet, opts);
   })
 
 export function show(wallet: Wallet, opts: { chain: Set<string>, private: boolean, mnemonic: boolean }) {
