@@ -1,17 +1,17 @@
 export const logger = {
-  info: (message: string) => {
+  info: (message: unknown) => {
     console.log(message)
   },
 
-  warn: (message: string) => {
+  warn: (message: unknown) => {
     console.warn(message)
   },
 
-  error: (message: string) => {
+  error: (message: unknown) => {
     console.error(message)
   },
 
-  debug: (message: string) => {
+  debug: (message: unknown) => {
     if (process.env.DEBUG) {
       console.log(message)
     }
