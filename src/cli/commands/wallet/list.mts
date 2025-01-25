@@ -3,7 +3,7 @@ import { Wallet } from '../../../libs/core/wallet.mjs';
 import { repositories as repos } from '../../../libs/persistence/repository.mjs';
 import { logger } from '../../logger/index.mjs';
 import { accountSummary } from '../../util/cli.mjs';
-import { WalletDataWithoutPassphrase } from '../../../libs/core/types.mjs';
+import { StoredWalletData } from '../../../libs/core/types.mjs';
 
 export const walletListCommand = new Command()
   .name('list')
@@ -21,7 +21,7 @@ export const walletListCommand = new Command()
     });
   })
 
-function summary(walletData: WalletDataWithoutPassphrase) {
+function summary(walletData: StoredWalletData) {
   return walletData.mnemonic.hasPassphrase
     ? 'locked'
     : accountSummary(Wallet.from(walletData).accounts);

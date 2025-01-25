@@ -3,7 +3,8 @@ import { Wallet } from '../../../libs/core/wallet.mjs';
 import { repositories as repos } from '../../../libs/persistence/repository.mjs';
 import { logger } from '../../logger/index.mjs';
 import prompts from 'prompts'
-import { WalletData, WalletDataWithoutPassphrase } from '../../../libs/core/types.mjs';
+import { WalletData, StoredWalletData } from '../../../libs/core/types.mjs';
+import { hexSha256 } from '../../../libs/utils/crypto.mjs';
 
 export const walletShowCommand = new Command()
   .name('show')
@@ -32,6 +33,11 @@ export const walletShowCommand = new Command()
         return;
       }
 
+      if (!await hashMatches(walletData.mnemonic.passphraseSha256, result.value)) {
+        logger.error('Passphrase is incorrect');
+        return;
+      }
+
       const wallet = Wallet.from(assignPassphrase(walletData, result.value));
       show(wallet, opts);
       return;
@@ -57,7 +63,7 @@ export function show(wallet: Wallet, opts: { chain: Set<string>, private: boolea
   });
 }
 
-function assignPassphrase(walletData: WalletDataWithoutPassphrase, value: string): WalletData {
+function assignPassphrase(walletData: StoredWalletData, value: string): WalletData {
   return {
     ...walletData,
     mnemonic: {
@@ -65,5 +71,9 @@ function assignPassphrase(walletData: WalletDataWithoutPassphrase, value: string
       passphrase: value
     }
   }
+}
+
+async function hashMatches(passphraseSha256: string | undefined, value: string): Promise<boolean> {
+  return await hexSha256(value) === passphraseSha256;
 }
 

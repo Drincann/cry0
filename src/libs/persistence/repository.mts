@@ -1,17 +1,17 @@
 import { UserHomeJsonStorage } from "./storage.mjs"
-import type { Collections, WalletDataWithoutPassphrase } from "../core/types.mjs"
+import type { Collections, StoredWalletData } from "../core/types.mjs"
 
 class WalletRepository {
   private storage: UserHomeJsonStorage<Collections> = new UserHomeJsonStorage()
-  public async getAllWallets(): Promise<WalletDataWithoutPassphrase[]> {
+  public async getAllWallets(): Promise<StoredWalletData[]> {
     return await this.storage.load('wallets') ?? []
   }
 
-  public async getWallet(alias: string): Promise<WalletDataWithoutPassphrase | undefined> {
+  public async getWallet(alias: string): Promise<StoredWalletData | undefined> {
     return (await this.getAllWallets()).find(wallet => wallet.alias === alias)
   }
 
-  public async save(wallet: WalletDataWithoutPassphrase): Promise<void> {
+  public async save(wallet: StoredWalletData): Promise<void> {
     await this.storage.save('wallets', [...await this.storage.load('wallets') ?? [], wallet])
   }
 

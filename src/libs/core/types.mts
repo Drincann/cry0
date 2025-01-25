@@ -10,19 +10,19 @@ export interface Mnemonic {
   passphrase?: string
 }
 
-export interface MnemonicWithoutPassphrase {
+export interface StoredMnemonic {
   words: string
   hasPassphrase: boolean
+  passphraseSha256?: string
 }
 
 export interface Collections {
-  wallets: WalletDataWithoutPassphrase[]
+  wallets: StoredWalletData[]
 }
 
-// 脱敏的
-export interface WalletDataWithoutPassphrase {
+export interface StoredWalletData {
   alias: string
-  mnemonic: MnemonicWithoutPassphrase
+  mnemonic: StoredMnemonic
   accounts: AccountData[]
 }
 

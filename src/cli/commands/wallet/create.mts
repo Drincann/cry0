@@ -52,7 +52,7 @@ export const walletCreateCommand = new Command()
       }
 
       logger.info(`Wallet '${wallet.alias}' created!`)
-      repos.wallet.save(wallet.serialize())
+      repos.wallet.save(await wallet.serialize())
     } catch (e: unknown) {
       if (e instanceof CliParameterError) {
         logger.error(e.message)
