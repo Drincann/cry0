@@ -1,4 +1,4 @@
-export const logger = {
+export const printer = {
   info: (message: unknown) => {
     console.log(message)
   },

@@ -1,10 +1,10 @@
 import BIP32Factory from 'bip32';
 import * as ecc from 'tiny-secp256k1';
-import * as bitcoin from 'bitcoinjs-lib'; // 引入 bitcoinjs-lib
+import * as bitcoin from 'bitcoinjs-lib';
 import { publicToAddress, importPublic } from '@ethereumjs/util'; // 引入 ethereumjs-util
 import * as mnemoniclib from 'bip39'
-import { wordsToEntropyBufferSize } from '../utils/mnemonic.mjs';
-import { Mnemonic } from './types.mjs';
+import { Mnemonic } from '../domain/types.mjs';
+import { getBtcNetwork } from '../env/index.mjs';
 
 const path = {
   ethPath: "m/44'/60'/0'/0",
@@ -23,7 +23,7 @@ export function generate(
 
 /**
  * btc:
- *  - private key: wif
+ *  - private key: hex wif
  *  - public key: hex
  *  - address: Bech32 (p2wpkh)
  * 
@@ -34,13 +34,13 @@ export function generate(
  */
 export function derive(mnemonic: Mnemonic, index: number): {
   ETH: {
-    privateKey: string,
-    publicKey: string,
+    privateKey: string
+    publicKey: string
     address: string
   },
   BTC: {
-    privateKey: string,
-    publicKey: string,
+    privateKey: { hex: string; wif: string }
+    publicKey: string
     address: string
   }
 } {
@@ -56,9 +56,9 @@ export function derive(mnemonic: Mnemonic, index: number): {
       address: paddingHexPrefix(Buffer.from(publicToAddress(importPublic(ethNode.publicKey))).toString('hex'))
     },
     BTC: {
-      privateKey: btcNode.toWIF(),
+      privateKey: { hex: Buffer.from(btcNode.privateKey!).toString('hex'), wif: btcNode.toWIF() },
       publicKey: Buffer.from(btcNode.publicKey).toString('hex'),
-      address: bitcoin.payments.p2wpkh({ pubkey: Buffer.from(btcNode.publicKey) }).address!
+      address: bitcoin.payments.p2wpkh({ pubkey: Buffer.from(btcNode.publicKey), network: getBtcNetwork() }).address!
     }
   }
 }
@@ -70,3 +70,10 @@ function paddingHexPrefix(hex: string): string {
   return hex
 }
 
+function wordsToEntropyBufferSize(length: 12 | 15 | 18 | 21 | 24): number | undefined {
+  if (length == 12) return 128
+  if (length == 15) return 160
+  if (length == 18) return 192
+  if (length == 21) return 224
+  if (length == 24) return 256
+}

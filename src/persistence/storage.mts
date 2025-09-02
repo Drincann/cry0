@@ -1,8 +1,8 @@
 import fs from 'fs/promises'
 import path from 'path'
-import { logger } from '../../cli/logger/index.mjs'
-import { Aes256GcmEncrypted, aesDecrypt, aesEncrypt } from '../utils/crypto.mjs'
-import { CliParameterError } from '../../cli/error/index.mjs'
+import { printer } from '../cli/output/index.mjs'
+import { Aes256GcmEncrypted, aesDecrypt, aesEncrypt } from '../crypto/aes.mjs'
+import { CliParameterError } from '../error/cli-error.mjs'
 
 export interface Storage<
   DataTypes extends { [key in Keys]: any },
@@ -42,7 +42,7 @@ export class EncryptedUserHomeJsonStorage<
 
         data[key as Keys] = content
       } catch (err) {
-        logger.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
+        printer.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
         throw err
       }
     })
@@ -60,7 +60,7 @@ export class EncryptedUserHomeJsonStorage<
       if (stat.isFile()) {
         await callback(filePath)
       } else {
-        logger.debug(`Storage: method walk: Skipping directory ${filePath}`)
+        printer.debug(`Storage: method walk: Skipping directory ${filePath}`)
       }
     }
   }
@@ -108,7 +108,7 @@ export class UserHomeJsonStorage<
       try {
         data[key as Keys] = JSON.parse((await fs.readFile(file, 'utf-8')))
       } catch (err) {
-        logger.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
+        printer.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
         throw err
       }
     })
@@ -126,7 +126,7 @@ export class UserHomeJsonStorage<
       if (stat.isFile()) {
         await callback(filePath)
       } else {
-        logger.warn(`Storage: method walk: Skipping directory ${filePath}`)
+        printer.warn(`Storage: method walk: Skipping directory ${filePath}`)
       }
     }
   }
@@ -171,12 +171,12 @@ const createIfNotExists = async (dir: string) => {
 
 const getUserHome = () => {
   if (process.env.HOME) {
-    logger.debug('Storage: method getUserHome: Using HOME')
+    printer.debug('Storage: method getUserHome: Using HOME')
     return process.env.HOME
   }
 
   if (process.env.USERPROFILE) {
-    logger.debug('Storage: method getUserHome: Using USERPROFILE')
+    printer.debug('Storage: method getUserHome: Using USERPROFILE')
     return process.env.USERPROFILE
   }
 

@@ -1,10 +1,11 @@
-import { Argument, Command } from 'commander';
-import { Wallet } from '../../../libs/core/wallet.mjs';
+import { Command } from 'commander';
+import { Wallet } from '../../../domain/wallet.mjs';
 import prompts from 'prompts'
-import { repositories as repos } from '../../../libs/persistence/repository.mjs';
-import { logger } from '../../logger/index.mjs';
-import { accountSummary, ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
-import { CliError } from '../../error/index.mjs';
+import { repositories as repos } from '../../../persistence/repository.mjs';
+import { printer } from '../../output/index.mjs';
+import { ensureCliLevelSecretInitialized } from '../../../env/index.mjs';
+import { accountSummary } from '../../../utils/display.mjs';
+import { CliError } from '../../../error/cli-error.mjs';
 
 export const walletRemoveCommand = new Command()
   .name('remove')
@@ -18,11 +19,11 @@ export const walletRemoveCommand = new Command()
       await ensureCliLevelSecretInitialized()
       const walletData = await repos.wallet.getWallet(walletAlias)
       if (walletData === undefined) {
-        logger.error(`Wallet with alias '${walletAlias}' not found`);
+        printer.error(`Wallet with alias '${walletAlias}' not found`);
         return;
       }
 
-      const wallet = Wallet.from(walletData);
+      const wallet = await Wallet.from(walletData);
       if (!opts.yes) {
         const answer = await prompts({
           type: 'confirm',
@@ -31,11 +32,11 @@ export const walletRemoveCommand = new Command()
         });
         if (!answer) return;
         repos.wallet.remove(walletAlias);
-        logger.info(`Wallet '${walletAlias}' removed`);
+        printer.info(`Wallet '${walletAlias}' removed`);
       }
     } catch (e: unknown) {
       if (e instanceof CliError) {
-        logger.error(e.message)
+        printer.error(e.message)
       }
     }
   })

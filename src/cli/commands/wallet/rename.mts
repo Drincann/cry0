@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import { repositories as repos } from '../../../libs/persistence/repository.mjs';
-import { logger } from '../../logger/index.mjs';
-import { ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
-import { CliError } from '../../error/index.mjs';
+import { repositories as repos } from '../../../persistence/repository.mjs';
+import { printer } from '../../output/index.mjs';
+import { ensureCliLevelSecretInitialized } from '../../../env/index.mjs';
+import { CliError } from '../../../error/cli-error.mjs';
 
 export const walletRenameCommand = new Command()
   .name('rename')
@@ -16,24 +16,24 @@ export const walletRenameCommand = new Command()
       const fromWalletData = await repos.wallet.getWallet(fromWallet)
       const toWalletData = await repos.wallet.getWallet(toWallet)
       if (fromWalletData === undefined) {
-        logger.error(`Wallet '${fromWallet}' not found`);
+        printer.error(`Wallet '${fromWallet}' not found`);
         return;
       }
 
       if (toWalletData !== undefined) {
-        logger.error(`Wallet '${toWallet}' already exists`);
+        printer.error(`Wallet '${toWallet}' already exists`);
         return;
       }
 
       if ((await repos.wallet.getAllWallets()).some(wallet => wallet.alias === toWallet)) {
-        logger.error(`Wallet with alias '${toWallet}' already exists`);
+        printer.error(`Wallet with alias '${toWallet}' already exists`);
         return;
       }
 
       repos.wallet.rename(fromWallet, toWallet);
     } catch (e: unknown) {
       if (e instanceof CliError) {
-        logger.error(e.message)
+        printer.error(e.message)
       }
     }
   })
