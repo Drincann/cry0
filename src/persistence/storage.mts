@@ -1,7 +1,7 @@
 import fs from 'fs/promises'
 import path from 'path'
 import { printer } from '../cli/output/index.mjs'
-import { Aes256GcmEncrypted, aesDecrypt, aesEncrypt } from '../crypto/aes.mjs'
+import { aesDecrypt, aesEncrypt } from '../crypto/aes.mjs'
 import { CliParameterError } from '../error/cli-error.mjs'
 
 export interface Storage<
@@ -31,19 +31,22 @@ export class EncryptedUserHomeJsonStorage<
     await this.walk(storageRoot, async file => {
       const key = path.basename(file, '.json')
       try {
-        let content = JSON.parse((await fs.readFile(file, 'utf-8')))
-        if (isCrypted(content)) {
+        const raw = JSON.parse((await fs.readFile(file, 'utf-8')))
+        if (isCrypted(raw)) {
           if (!this.passphrase) {
             throw new CliParameterError('Passphrase is required')
           }
 
-          content = JSON.parse(await decrypt(content, this.passphrase))
+          const decrypted = await aesDecrypt(raw, this.passphrase)
+          const content = JSON.parse(decrypted)
+          data[key as Keys] = content
+          return;
         }
 
-        data[key as Keys] = content
+        data[key as Keys] = raw
       } catch (err) {
-        printer.debug(`Storage: class UserHomeJsonStorage: Error loading data for key ${key}`)
-        throw err
+        printer.debug(`Storage: class EncryptedUserHomeJsonStorage: Error loading data for key ${key}: ${(err as any)?.message ?? 'unknown error'}`)
+        throw new CliParameterError((err as any)?.message ?? 'unknown error')
       }
     })
 
@@ -183,18 +186,9 @@ const getUserHome = () => {
   throw new Error('Could not find home directory from environment variables')
 }
 
-async function decrypt(content: Aes256GcmEncrypted, passphrase: string): Promise<string> {
-  try {
-    return await aesDecrypt(content, passphrase)
-  } catch (e) {
-    throw new CliParameterError('The passphrase is incorrect')
-  }
-}
-
-function isCrypted(content: unknown): content is Aes256GcmEncrypted {
+function isCrypted(content: unknown): boolean {
   if (content === undefined || content === null) {
     return false
   }
-  return typeof content === 'object'
-    && 'ciphertext' in content && 'salt' in content && 'iv' in content && 'tag' in content
+  return typeof content === 'object' && 'ciphertext' in content
 }
