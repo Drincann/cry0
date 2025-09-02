@@ -1,27 +1,5 @@
 import crypto from 'crypto'
 
-export async function hexSha256(data: string): Promise<string> {
-  const utf8 = new TextEncoder().encode(data);
-  return globalThis.crypto.subtle.digest('SHA-256', utf8).then((hashBuffer) => {
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hex = hashArray
-      .map((bytes) => bytes.toString(16).padStart(2, '0'))
-      .join('');
-    return hex;
-  });
-}
-
-export async function generateSecret(): Promise<{
-  salt: string
-  iv: string
-  tag: string
-}> {
-  const salt = crypto.randomBytes(16).toString('hex')
-  const iv = crypto.randomBytes(12).toString('hex')
-  const tag = crypto.randomBytes(16).toString('hex')
-  return { salt, iv, tag }
-}
-
 export interface Aes256GcmEncrypted {
   salt: string
   iv: string

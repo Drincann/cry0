@@ -1,16 +1,38 @@
+import { Network, networks } from "bitcoinjs-lib";
+import { hexSha256 } from "../crypto/hash.mjs";
+import { repositories } from "../persistence/repository.mjs";
+import { CliParameterError } from "../error/cli-error.mjs";
 import prompts from "prompts";
-import { Account } from "../../libs/core/account.mjs";
-import { Address } from "../../libs/core/address.mjs";
-import { repositories } from "../../libs/persistence/repository.mjs";
-import { CliParameterError } from "../error/index.mjs";
-import { hexSha256 } from "../../libs/utils/crypto.mjs";
+import { checkHash, isNotString } from "../utils/validator.mjs";
 
-export function accountSummary(accounts: Map<string, Account>) {
-  return [...accounts.entries()].map(([alias, account]) => `${alias} ${addressSummary(account.addresses)}`).join(', ');
+const netMappings = {
+  'testnet': networks.testnet,
+  'mainnet': networks.bitcoin,
+  'regtest': networks.regtest,
+  'bitcoin': networks.bitcoin,
+} as Record<string, Network>
+
+let networkSelectNotified = false;
+export function getBtcNetwork(): Network {
+  const definedNetwork = emptyToUndefined(process.env.CRYO_GLOBAL_BITCOIN_NETWORK)
+  if (definedNetwork === undefined) {
+    if (!networkSelectNotified) {
+      console.warn('CRYO_GLOBAL_BITCOIN_NETWORK is not set, using mainnet')
+      networkSelectNotified = true
+    }
+    return networks.bitcoin
+  }
+
+  if (!networkSelectNotified) {
+    console.warn('CRYO_GLOBAL_BITCOIN_NETWORK is set to ' + definedNetwork)
+    networkSelectNotified = true
+  }
+
+  return netMappings[definedNetwork.toLowerCase().trim()] ?? networks.bitcoin
 }
 
-export function addressSummary(addresses: { ETH: Address<"ETH">; BTC: Address<"BTC">; }) {
-  return `BTC ${addresses.BTC.address.slice(0, 4)}...${addresses.BTC.address.slice(-4)}, ETH ${addresses.ETH.address.slice(0, 4)}...${addresses.ETH.address.slice(-4)}`;
+function emptyToUndefined(value: string | undefined): string | undefined {
+  return value?.trim() === '' ? undefined : value;
 }
 
 export async function ensureCliLevelSecretInitialized() {
@@ -70,22 +92,3 @@ async function questionCliPassphrase(cliPassphrase: string | undefined) {
   }
   return cliPassphrase;
 }
-
-function isNotString(value: unknown): value is undefined {
-  return typeof value !== 'string';
-}
-function emptyToUndefined(CRYO_GLOBAL_PASSPHRASE: string | undefined): string | undefined {
-  return CRYO_GLOBAL_PASSPHRASE?.trim() === '' ? undefined : CRYO_GLOBAL_PASSPHRASE;
-}
-
-async function checkHash(fromRepository: string | undefined, fromUser: string) {
-  if (typeof fromRepository !== 'string' || typeof fromUser !== 'string') {
-    throw new CliParameterError('CLI passphrase is incorrect');
-  }
-
-  const hash = await hexSha256(fromUser)
-  if (hash !== fromRepository) {
-    throw new CliParameterError('CLI passphrase is incorrect');
-  }
-}
-

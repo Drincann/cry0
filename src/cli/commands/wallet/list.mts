@@ -1,10 +1,11 @@
 import { Command } from 'commander';
-import { Wallet } from '../../../libs/core/wallet.mjs';
-import { repositories as repos } from '../../../libs/persistence/repository.mjs';
-import { logger } from '../../logger/index.mjs';
-import { accountSummary, ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
-import { StoredWalletData } from '../../../libs/core/types.mjs';
-import { CliError } from '../../error/index.mjs';
+import { Wallet } from '../../../domain/wallet.mjs';
+import { repositories as repos } from '../../../persistence/repository.mjs';
+import { printer } from '../../output/index.mjs';
+import { ensureCliLevelSecretInitialized } from '../../../env/index.mjs';
+import { StoredWalletData } from '../../../domain/types.mjs';
+import { CliError } from '../../../error/cli-error.mjs';
+import { accountSummary } from '../../../utils/display.mjs';
 
 export const walletListCommand = new Command()
   .name('list')
@@ -15,22 +16,23 @@ export const walletListCommand = new Command()
       await ensureCliLevelSecretInitialized()
       const walletsData = (await repos.wallet.getAllWallets())
       if (walletsData.length === 0) {
-        logger.info('No wallets found');
+        printer.info('No wallets found');
         return;
       }
 
-      walletsData.forEach((walletData, i) => {
-        logger.info(`${i}.${walletData.alias} [${summary(walletData)}]`);
-      });
+      for (let i = 0; i < walletsData.length; i++) {
+        const walletData = walletsData[i];
+        printer.info(`${i}.${walletData.alias} [${await summary(walletData)}]`);
+      }
     } catch (e: unknown) {
       if (e instanceof CliError) {
-        logger.error(e.message)
+        printer.error(e.message)
       }
     }
   })
 
-function summary(walletData: StoredWalletData) {
+async function summary(walletData: StoredWalletData) {
   return walletData.mnemonic.hasPassphrase
     ? 'locked'
-    : accountSummary(Wallet.from(walletData).accounts);
+    : accountSummary((await Wallet.from(walletData)).accounts);
 }

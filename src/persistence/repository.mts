@@ -1,15 +1,11 @@
 import { EncryptedUserHomeJsonStorage, Storage, UserHomeJsonStorage } from "./storage.mjs"
-import type { Collections, StoredWalletData } from "../core/types.mjs"
+import type { Collections, StoredWalletData } from "../domain/types.mjs"
+
+let storage: Storage<Collections> = new EncryptedUserHomeJsonStorage('');
 
 class WalletRepository {
-  private storage: Storage<Collections> = new EncryptedUserHomeJsonStorage('');
-
-  public init(passphrase: string) {
-    this.storage = new EncryptedUserHomeJsonStorage(passphrase)
-  }
-
   public async getAllWallets(): Promise<StoredWalletData[]> {
-    return await this.storage.load('wallets') ?? []
+    return await storage.load('wallets') ?? []
   }
 
   public async getWallet(alias: string): Promise<StoredWalletData | undefined> {
@@ -17,15 +13,15 @@ class WalletRepository {
   }
 
   public async save(wallet: StoredWalletData): Promise<void> {
-    await this.storage.save('wallets', [...await this.storage.load('wallets') ?? [], wallet])
+    await storage.save('wallets', [...await storage.load('wallets') ?? [], wallet])
   }
 
   public async remove(walletAlias: string) {
-    this.storage.save('wallets', (await this.storage.load('wallets')).filter(wallet => wallet.alias !== walletAlias))
+    storage.save('wallets', (await storage.load('wallets')).filter(wallet => wallet.alias !== walletAlias))
   }
 
   public async rename(fromWallet: any, toWallet: any) {
-    this.storage.save('wallets', (await this.storage.load('wallets')).map(wallet => {
+    storage.save('wallets', (await storage.load('wallets')).map(wallet => {
       if (wallet.alias === fromWallet) {
         wallet.alias = toWallet
       }
@@ -52,6 +48,6 @@ export const repositories = {
   wallet: walletRepo,
   secret: secretRepo,
   init: async (passphrase: string) => {
-    walletRepo.init(passphrase)
+    storage = new EncryptedUserHomeJsonStorage(passphrase)
   }
 }

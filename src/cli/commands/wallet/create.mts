@@ -1,12 +1,13 @@
 import { Command } from 'commander';
-import { repositories as repos } from '../../../libs/persistence/repository.mjs';
-import { CliParameterError } from '../../error/index.mjs';
-import { logger } from '../../logger/index.mjs';
-import * as mnemonicUtil from '../../../libs/core/mnemonic.mjs'
+import { repositories as repos } from '../../../persistence/repository.mjs';
+import { CliParameterError } from '../../../error/cli-error.mjs';
+import { printer } from '../../output/index.mjs';
+import * as mnemonicUtil from '../../../crypto/mnemonic.mjs'
 import assert from 'assert';
-import { Wallet } from '../../../libs/core/wallet.mjs';
+import { Wallet } from '../../../domain/wallet.mjs';
 import { show } from './show.mjs';
-import { ensureCliLevelSecretInitialized } from '../../util/cli.mjs';
+import { ensureCliLevelSecretInitialized } from '../../../env/index.mjs';
+import { containsWhite, ensureSingleWhiteSpace, isEmpty, isNumber, isString, isValidMnemonicLength, notIn, wordsSizeOf } from '../../../utils/validator.mjs';
 
 interface WalletCreateParams {
   alias?: string
@@ -43,21 +44,21 @@ export const walletCreateCommand = new Command()
       const wallet: Wallet = Wallet.generateWithDefaultAccount(walletName, mnemonic)
 
       if (opts.showMnemonic) {
-        logger.warn('warn: mnemonic is shown in the console, please keep it safe')
-        logger.info('Generated mnemonic: ' + mnemonic.words)
+        printer.warn('warn: mnemonic is shown in the console, please keep it safe')
+        printer.info('Generated mnemonic: ' + mnemonic.words)
       }
 
       if (opts.ephemeral) {
-        logger.info(`Ephemeral wallet created! (not saved)`)
+        printer.info(`Ephemeral wallet created! (not saved)`)
         show(wallet, { chain: new Set(), private: true, mnemonic: true })
         return;
       }
 
-      logger.info(`Wallet '${wallet.alias}' created!`)
+      printer.info(`Wallet '${wallet.alias}' created!`)
       repos.wallet.save(await wallet.serialize())
     } catch (e: unknown) {
       if (e instanceof CliParameterError) {
-        logger.error(e.message)
+        printer.error(e.message)
       }
     }
   })
@@ -67,49 +68,6 @@ function check(opts: WalletCreateParams) {
   checkMnemonic(opts.mnemonic)
   checkMnemonicLengthToGenerate(opts.mnemonicLength)
   // TODO: impl the rest chack
-}
-
-async function generateNextWalletName(): Promise<string> {
-  const walletsData = await repos.wallet.getAllWallets()
-
-  let nextNameSuffixIndex = 0
-  let nextName = 'wallet_' + nextNameSuffixIndex
-  while (walletsData.find(wallet => wallet.alias === nextName)) nextName = 'wallet_' + ++nextNameSuffixIndex;
-
-  return nextName
-}
-
-function isEmpty(alias: string) {
-  return (alias?.length ?? 0) === 0;
-}
-
-function isString(alias: string | undefined) {
-  return typeof alias === 'string';
-}
-
-function containsWhite(alias: string) {
-  return alias.search(/\s/) !== -1;
-}
-
-function fix(opts: WalletCreateParams) {
-  if (typeof opts.alias === 'string') {
-    opts.alias = opts.alias.trim()
-  }
-
-  if (typeof opts.mnemonic === 'string') {
-    opts.mnemonic = ensureSingleWhiteSpace(opts.mnemonic.trim())
-  }
-}
-
-function ensureSingleWhiteSpace(value: string): string {
-  return value.replaceAll(/\s+/g, ' ')
-}
-function wordsSizeOf(mnemonic: string): number {
-  return mnemonic.split(' ').length
-}
-
-function notIn(item: number, list: number[]): boolean {
-  return !list.includes(item)
 }
 
 function checkWalletAlias(alias: string | undefined) {
@@ -138,15 +96,22 @@ function checkMnemonicLengthToGenerate(mnemonicLength: number | undefined) {
   }
 }
 
-function isNumber(value: unknown): value is number {
-  return typeof value === 'number'
+async function generateNextWalletName(): Promise<string> {
+  const walletsData = await repos.wallet.getAllWallets()
+
+  let nextNameSuffixIndex = 0
+  let nextName = 'wallet_' + nextNameSuffixIndex
+  while (walletsData.find(wallet => wallet.alias === nextName)) nextName = 'wallet_' + ++nextNameSuffixIndex;
+
+  return nextName
 }
 
-function isValidMnemonicLength(mnemonicLength: number): mnemonicLength is 12 | 15 | 18 | 21 | 24 {
-  return _in(mnemonicLength, [12, 15, 18, 21, 24])
-}
+function fix(opts: WalletCreateParams) {
+  if (typeof opts.alias === 'string') {
+    opts.alias = opts.alias.trim()
+  }
 
-function _in(item: number, list: number[]): boolean {
-  return !notIn(item, list)
+  if (typeof opts.mnemonic === 'string') {
+    opts.mnemonic = ensureSingleWhiteSpace(opts.mnemonic.trim())
+  }
 }
-

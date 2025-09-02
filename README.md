@@ -14,77 +14,78 @@ npm link
 
 # Usage
 
-## Wallets
+## Address
 
-```fish
-cry0 help wallet
-
-cry0 wallet help create
-
-cry0 wallet help remove
-
-cry0 wallet help rename
-
-cry0 wallet help list
-
-cry0 wallet help show
-
-```
-
-```
-Usage: cry0 wallet [options] [command]
-
-Manage wallets
-
-Options:
-  -h, --help                         display help for command
-
-Commands:
-  create [options]                   Create a new wallet
-  rename <wallet-alias> <new-alias>
-  show [options] <wallet-alias>
-  list                               List all wallets
-  remove [options] <wallet-alias>
-  help [command]                     display help for command
-
-```
-
-Example:
-
-create a new wallet
+Create a new wallet
 
 ```fish
 cry0 wallet create --alias my-wallet
 ```
 
-import a wallet using mnemonic
+Import a wallet using mnemonic with passphrase(optional)
 
 ```fish
 cry0 wallet create --alias my-wallet --mnemonic "word1 word2 word3 ..." --passphrase "passphrase"
 ```
 
-list all wallets
+Create a temporary wallet(only display in console)
+
+```fish
+cry0 wallet create --ephemeral
+```
+
+List all wallets
 
 ```fish
 cry0 wallet list
 ```
 
-show account details with private key
+Show account details with private key
 
 ```fish
 cry0 wallet show my-wallet --private
 ```
 
-rename wallet
+Rename wallet
 
 ```fish
 cry0 wallet rename my-wallet new-wallet
 ```
 
-## Address
+Delete wallet
 
-In development...
+```fish
+cry0 wallet remove my-wallet
+```
 
-## Transaction
+## Transaction (only BTC is supported now)
 
-In development...
+Create and sign a transaction:
+
+```fish
+cry0 tx sign --from my-wallet@default --to tb1qamc6hlgvd5e9j8x6dfkl78m6jc3g6xq732hzxk \
+  --amount 1500 --fee 500 \
+  --utxo c5fa5d71deaa6731fb906622ac431b0acd88e26c81272ef26bd8bd35fb3082f2:0:1000 \
+  --utxo 8ab61a6dc59637de8bdd9d04a4b9fd134d3261c77f3c5ae696e26d3538d64241:0:500 \
+  --utxo f58a8230110604ffc28c46ff7a2e616514526f4a436831a9063325f9056e9d4a:0:500
+```
+
+Broadcast a transaction:
+
+```fish
+cry0 tx broadcast --tx <tx-content> --provider mempool-testnet4
+```
+
+Create sign and broadcast with `--broadcast <provider-name-or-url>` directly:
+
+```fish
+cry0 tx sign --from my-wallet@default --to tb1qamc6hlgvd5e9j8x6dfkl78m6jc3g6xq732hzxk \
+  --amount 859 --fee 141 \
+  --utxo c5fa5d71deaa6731fb906622ac431b0acd88e26c81272ef26bd8bd35fb3082f2:0:1000 \
+  --broadcast mempool-testnet4
+```
+
+## Env
+
+- `CRYO_GLOBAL_PASSPHRASE`: Set the passphrase for the CLI
+- `CRYO_GLOBAL_BITCOIN_NETWORK`: Set the Bitcoin network: 'mainnet' (or 'bitcoin'), 'regtest', 'testnet'
