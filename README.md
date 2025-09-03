@@ -89,3 +89,4 @@ cry0 tx sign --from my-wallet@default --to tb1qamc6hlgvd5e9j8x6dfkl78m6jc3g6xq73
 
 - `CRYO_GLOBAL_PASSPHRASE`: Set the passphrase for the CLI
 - `CRYO_GLOBAL_BITCOIN_NETWORK`: Set the Bitcoin network: 'mainnet' (or 'bitcoin'), 'regtest', 'testnet'
+- `DEBUG`: Show debug logs if set.
