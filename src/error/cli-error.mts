@@ -1,20 +1,17 @@
 export class CliError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CliError';
+  constructor(message: string, error?: unknown) {
+    super(message, { cause: error instanceof Error ? error : undefined })
   }
 }
 
 export class CliInternalError extends CliError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CliInternalError';
+  constructor(message: string, error?: unknown) {
+    super(message, error)
   }
 }
 
 export class CliParameterError extends CliError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'CliParameterError';
+  constructor(message: string, error?: unknown) {
+    super(message, error)
   }
 }
