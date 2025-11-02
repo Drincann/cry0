@@ -14,11 +14,14 @@ const path = {
 const bip32 = BIP32Factory(ecc)
 
 export function generate(
-  wordsLength: 12 | 15 | 18 | 21 | 24,
-  entropyGenerator?: (size: number) => Buffer
+  wordsLengthOrEntropy: 12 | 15 | 18 | 21 | 24 | Buffer,
 ): string {
-  const words = mnemoniclib.generateMnemonic(wordsToEntropyBufferSize(wordsLength), entropyGenerator)
-  return words
+  if (wordsLengthOrEntropy instanceof Buffer) {
+    const words = mnemoniclib.generateMnemonic(entropyBufferSizeToWords(wordsLengthOrEntropy.length), () => wordsLengthOrEntropy)
+    return words
+  }
+
+  return mnemoniclib.generateMnemonic(wordsToEntropyBufferSize(wordsLengthOrEntropy as 12 | 15 | 18 | 21 | 24), undefined)
 }
 
 /**
@@ -76,4 +79,12 @@ function wordsToEntropyBufferSize(length: 12 | 15 | 18 | 21 | 24): number | unde
   if (length == 18) return 192
   if (length == 21) return 224
   if (length == 24) return 256
+}
+
+function entropyBufferSizeToWords(length: number): number | undefined {
+  if (length == 128) return 12
+  if (length == 160) return 15
+  if (length == 192) return 18
+  if (length == 224) return 21
+  if (length == 256) return 24
 }

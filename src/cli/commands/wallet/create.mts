@@ -16,6 +16,7 @@ interface WalletCreateParams {
   passphrase?: string
   showMnemonic?: boolean
   ephemeral?: boolean
+  entropyBits?: string
 }
 
 export const walletCreateCommand = new Command()
@@ -28,16 +29,17 @@ export const walletCreateCommand = new Command()
   .option('-p --passphrase <passphrase>', 'Passphrase for the mnemonic')
   .option('-s --show-mnemonic', 'Show the mnemonic after creating the wallet', false)
   .option('-e --ephemeral', 'Do not save the wallet, only display in console', false)
+  .option('-b --entropy-bits <bits>', 'Entropy bits for the wallet, receive 128, 160, 192, 224, 256 bits')
 
   .action(async (opts: WalletCreateParams) => {
     try {
       await ensureCliLevelSecretInitialized()
       fix(opts)
-      check(opts); assert(isValidMnemonicLength(opts.mnemonicLength))
+      check(opts); assert(opts.entropyBits != undefined || isValidMnemonicLength(opts.mnemonicLength))
 
       const walletName = opts.ephemeral ? 'ephemeral' : opts.alias ?? await generateNextWalletName()
       const mnemonic = {
-        words: opts.mnemonic ?? mnemonicUtil.generate(opts.mnemonicLength),
+        words: opts.mnemonic ?? mnemonicUtil.generate(toBuffer(opts.entropyBits) as Buffer | undefined ?? opts.mnemonicLength as 12 | 15 | 18 | 21 | 24),
         passphrase: opts.passphrase
       }
 
@@ -63,11 +65,27 @@ export const walletCreateCommand = new Command()
     }
   })
 
+function toBuffer(bits?: string): Buffer | undefined {
+  if (bits == undefined) {
+    return undefined
+  }
+
+  const byteLength = bits.length / 8
+  const buffer = Buffer.alloc(byteLength)
+  for (let i = 0; i < byteLength; i++) {
+    buffer[i] = parseInt(bits.slice(i * 8, (i + 1) * 8), 2)
+  }
+  return buffer
+}
+
 function check(opts: WalletCreateParams) {
   checkWalletAlias(opts.alias)
   checkMnemonic(opts.mnemonic)
-  checkMnemonicLengthToGenerate(opts.mnemonicLength)
-  // TODO: impl the rest chack
+  if (opts.entropyBits != undefined) {
+    checkEntropyBits(opts.entropyBits)
+  } else {
+    checkMnemonicLengthToGenerate(opts.mnemonicLength)
+  }
 }
 
 function checkWalletAlias(alias: string | undefined) {
@@ -87,6 +105,16 @@ function checkWalletAlias(alias: string | undefined) {
 function checkMnemonic(mnemonic: string | undefined) {
   if (isString(mnemonic) && notIn(wordsSizeOf(mnemonic), [12, 15, 18, 21, 24])) {
     throw new CliParameterError('mnemonic should be a 12, 15, 18, 21 or 24 words long')
+  }
+}
+
+function checkEntropyBits(entropyBits: string) {
+  const validBits = [128, 160, 192, 224, 256]
+  if (!validBits.includes(entropyBits.length)) {
+    throw new CliParameterError('entropy bits should be one of ' + validBits.join(', '))
+  }
+  if (!entropyBits.match(/^[01]+$/)) {
+    throw new CliParameterError('entropy bits should be a binary string containing only 0 and 1')
   }
 }
 

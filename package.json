@@ -1,6 +1,6 @@
 {
   "name": "cry0",
-  "version": "0.2.0-alpha.1",
+  "version": "0.2.0-alpha.2",
   "description": "A lightweight CLI for generating cold wallets, managing keys, and signing cryptocurrency transactions offline across multiple blockchains.",
   "main": "dist/index.mjs",
   "bin": {
